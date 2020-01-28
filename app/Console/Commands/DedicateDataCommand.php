@@ -36,7 +36,8 @@ class DedicateDataCommand extends Command
     public function handle()
     {
         Log::Info([Carbon::now()]);
-//        $this->exec();
+        $this->exec();
+        Log::Info([Carbon::now()]);
     }
 
 

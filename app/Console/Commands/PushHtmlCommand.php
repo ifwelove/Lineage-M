@@ -36,14 +36,15 @@ class PushHtmlCommand extends Command
     public function handle()
     {
         Log::Info([Carbon::now()]);
-//        $this->indexHtml();
-//        $this->serverDayReport();
-//        $this->serverMonthReport();
-//        $this->cardTime();
-//        $this->purpleItemTime();
-//        $this->redItemTime();
-//        $this->item();
-//        $this->wawa();
+        $this->indexHtml();
+        $this->serverDayReport();
+        $this->serverMonthReport();
+        $this->cardTime();
+        $this->purpleItemTime();
+        $this->redItemTime();
+        $this->item();
+        $this->wawa();
+        Log::Info([Carbon::now()]);
 //        dd('ok');
     }
 

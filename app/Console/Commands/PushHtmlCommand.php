@@ -36,13 +36,13 @@ class PushHtmlCommand extends Command
 
     public function handle()
     {
-        $files = Storage::allFiles();
-        dd($files);
-        foreach ($files as $file) {
-            if ($file != '.DS_Store') {
-                rename(storage_path(sprintf("games/%s", $file)),sprintf("../%s", $file));
-            }
-        }
+//        $files = Storage::allFiles();
+//        dd($files);
+//        foreach ($files as $file) {
+//            if ($file != '.DS_Store') {
+//                rename(storage_path(sprintf("games/%s", $file)),sprintf("../%s", $file));
+//            }
+//        }
         Log::Info([Carbon::now()]);
         $this->indexHtml();
         $this->serverDayReport();

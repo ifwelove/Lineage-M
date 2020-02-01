@@ -4,6 +4,7 @@ namespace App\Console;
 
 use App\Console\Commands\DedicateDataCommand;
 use App\Console\Commands\MoveHtmlCommand;
+use App\Console\Commands\PastDataCommand;
 use App\Console\Commands\PushHtmlCommand;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
@@ -18,6 +19,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         PushHtmlCommand::class,
         DedicateDataCommand::class,
+        PastDataCommand::class,
         MoveHtmlCommand::class
     ];
 

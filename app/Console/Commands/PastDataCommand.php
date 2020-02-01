@@ -7,14 +7,14 @@ use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
-class DedicateDataCommand extends Command
+class PastDataCommand extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'dedicate:data';
+    protected $signature = 'past:data';
 
     /**
      * The console command description.
@@ -35,7 +35,9 @@ class DedicateDataCommand extends Command
 
     public function handle()
     {
-        Log::Info(['dedicate:data' => Carbon::now()]);
+        $game = Games::where('server_id', 1)->orderBy('date')->first();
+        $this->date = Carbon::parse($game->date)->subDays(1);
+        Log::Info(['past:data' => $this->date]);
         Log::Info(['start' => Carbon::now()]);
         $this->exec();
         Log::Info(['end' => Carbon::now()]);
@@ -48,9 +50,7 @@ class DedicateDataCommand extends Command
         foreach ($servers as $serverId => $serverName) {
             $this->serverId = $serverId;
             dump($this->serverId);
-            $this->date = Carbon::today()->subDays(1);
-//            for ($i = 15; $i < 31; $i++) {
-//                $this->date = sprintf('2020-01-%s', $i);
+//            $this->date = Carbon::today()->subDays(1);
             $this->page = 0;
             $this->totalpage = 0;
             $this->mapping = [
@@ -62,7 +62,6 @@ class DedicateDataCommand extends Command
                 '烈焰地監' => ['總數' => 0],
             ];
             $this->curl();
-//            }
         }
 //        dump($this->mapping);
 //        collect($this->mapping)->each(function ($value, $key) {

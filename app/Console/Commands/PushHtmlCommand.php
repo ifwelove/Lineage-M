@@ -36,15 +36,9 @@ class PushHtmlCommand extends Command
 
     public function handle()
     {
-//        $files = Storage::allFiles();
-//        dd($files);
-//        foreach ($files as $file) {
-//            if ($file != '.DS_Store') {
-//                rename(storage_path(sprintf("games/%s", $file)),sprintf("../%s", $file));
-//            }
-//        }
         Log::Info([Carbon::now()]);
-        $this->indexHtml();
+//                $this->indexHtml();
+        $this->dashboardHtml();
         $this->serverDayReport();
         $this->serverMonthReport();
         $this->cardTime();
@@ -53,7 +47,6 @@ class PushHtmlCommand extends Command
         $this->item();
         $this->wawa();
         Log::Info([Carbon::now()]);
-//        dd('ok');
     }
 
     /**
@@ -61,40 +54,92 @@ class PushHtmlCommand extends Command
      *
      * @return mixed
      */
-    public function indexHtml()
+    //    public function indexHtml()
+    //    {
+    //        set_time_limit(0);
+    //        $items = config('game-item');
+    //        $servers = config('games');
+    //        $wawas = config('game-wawa');
+    //        for ($i = 1; $i <= 90; $i++) {
+    //            $date = Carbon::today()->subDays($i);
+    //            $dates[] = $date->format('Y-m-d');
+    //        }
+    //        $contents = view('theme.layout-server-day-report-index')->with([
+    //            'dates' => $dates,
+    //            'servers' => $servers,
+    //            'items' => $items,
+    //            'wawas' => $wawas,
+    //        ])->render();
+    //        file_put_contents(public_path('index.html'),
+    //            $contents);
+    //    }
+
+    private function getLayoutConfig()
+    {
+        $layout_items   = config('game-item');
+        $layout_servers = config('games');
+        $layout_game_servers = config('game-server');
+        for ($i = 1; $i <= 7; $i++) {
+            $date           = Carbon::today()
+                ->subDays($i);
+            $layout_dates[] = $date->format('Y-m-d');
+        }
+
+        return [
+            'layout_dates'   => $layout_dates,
+            'layout_today'   => Carbon::today()
+                ->format('Y-m-d'),
+            'layout_servers' => $layout_servers,
+            'layout_game_servers' => $layout_game_servers,
+            'layout_items'   => $layout_items,
+        ];
+    }
+
+    public function dashboardHtml()
     {
         set_time_limit(0);
-        $items = config('game-item');
-        $wawas = config('game-wawa');
-        for ($i = 1; $i <= 90; $i++) {
-            $date = Carbon::today()->subDays($i);
-            $dates[] = $date->format('Y-m-d');
-        }
-        $contents = view('server-day-report-index')->with([
-            'dates' => $dates,
-            'items' => $items,
-            'wawas' => $wawas,
-        ])->render();
-        file_put_contents(storage_path('games/index.html'),
-            $contents);
+        $game = Games::where('server_id', 1)->orderBy('date')->first();
+        $date = Carbon::parse($game->date)->format('Y-m-d');
+        $yesterday = Carbon::yesterday()
+            ->format('Y-m-d');
+        $total = Games::where('date', $yesterday)->count();
+        $total_item = Games::where('date', $yesterday)->whereIn('type', [2, 3])->count();
+        $total_card = Games::where('date', $yesterday)->where('type', 1)->count();
+        $contents = view('theme.layout-dashboard')
+            ->with($this->getLayoutConfig() +
+                [
+                'total' => $total,
+                'date' => $date,
+                'total_item' => $total_item,
+                'total_card' => $total_card,
+                ])
+            ->render();
+        file_put_contents(public_path('index.html'), $contents);
     }
 
     public function wawaPage()
     {
         set_time_limit(0);
-        $servers = config('games');
+        $servers     = config('games');
         $wawasConfig = config('game-wawa');
-        $wawas = collect($wawasConfig)->pluck('item');
-        $result = [];
+        $wawas       = collect($wawasConfig)->pluck('item');
+        $result      = [];
         foreach ($wawas as $wawa) {
             for ($i = 0; $i < 24; $i++) {
-                $start = Carbon::today()->hours($i)->format('H:i');
-                $end = Carbon::today()->hours($i)->minutes(59)->format('H:i');
+                $start                              = Carbon::today()
+                    ->hours($i)
+                    ->format('H:i');
+                $end                                = Carbon::today()
+                    ->hours($i)
+                    ->minutes(59)
+                    ->format('H:i');
                 $result[$start . '-' . $end][$wawa] = 0;
             }
         }
         foreach ($wawas as $wawa) {
-            $data = Games::where('type', 1)->where('grade_cd', 4)->where('item_name', $wawa);
+            $data = Games::where('type', 1)
+                ->where('grade_cd', 4)
+                ->where('item_name', $wawa);
             $data = $data->get();
             $data = $data->toArray();
 
@@ -113,26 +158,27 @@ class PushHtmlCommand extends Command
         }
         foreach ($output as $time => &$item) {
             arsort($item);
-//            dd($item);
-//            $output[$time] = $item;
+            //            dd($item);
+            //            $output[$time] = $item;
         }
-        $contents = view('wawa-time')->with([
-            'servers' => $servers,
-            'result' => $output,
-        ])->render();
-        file_put_contents(storage_path('games/' . 'wawa' . '.html'),
-            $contents);
-//        foreach ($wawasConfig as $wawa) {
-//            $contents = view('wawa-time')->with([
-//                'servers' => $servers,
-//                'result' => $output,
-//                'template_name' => $wawa['item'],
-//                'unit' => $wawa['unit'],
-//            ])->render();
-//
-//            file_put_contents(storage_path('games/' . $wawa['item'] . '.html'),
-//                $contents);
-//        }
+        $contents = view('theme.layout-wawa-time')
+            ->with($this->getLayoutConfig() + [
+                    'servers' => $servers,
+                    'result'  => $output,
+                ])
+            ->render();
+        file_put_contents(public_path('wawa' . '.html'), $contents);
+        //        foreach ($wawasConfig as $wawa) {
+        //            $contents = view('theme.layout-wawa-time')->with($this->getLayoutConfig() + [
+        //                'servers' => $servers,
+        //                'result' => $output,
+        //                'template_name' => $wawa['item'],
+        //                'unit' => $wawa['unit'],
+        //            ])->render();
+        //
+        //            file_put_contents(storage_path('games/' . $wawa['item'] . '.html'),
+        //                $contents);
+        //        }
     }
 
     public function itemPage($template_name = null, $item_name = null, $land_nm = null, $unit = null)
@@ -141,17 +187,22 @@ class PushHtmlCommand extends Command
         $servers = config('games');
         //@all
         $data = Games::where('item_name', $item_name);
-        if (!is_null($land_nm)) {
+        if (! is_null($land_nm)) {
             $data = $data->where('land_nm', $land_nm);
         }
-        $data = $data->get();
-        $total = $data->count();
-        $data = $data->toArray();
+        $data   = $data->get();
+        $total  = $data->count();
+        $data   = $data->toArray();
         $result = [];
         for ($i = 0; $i < 24; $i++) {
-            $start = Carbon::today()->hours($i)->format('H:i');
-            $end = Carbon::today()->hours($i)->minutes(59)->format('H:i');
-            $result[$start . '-' . $end]['num'] = 0;
+            $start                                  = Carbon::today()
+                ->hours($i)
+                ->format('H:i');
+            $end                                    = Carbon::today()
+                ->hours($i)
+                ->minutes(59)
+                ->format('H:i');
+            $result[$start . '-' . $end]['num']     = 0;
             $result[$start . '-' . $end]['percent'] = 0;
         }
         foreach ($data as $item) {
@@ -161,23 +212,33 @@ class PushHtmlCommand extends Command
         }
         foreach ($result as $time => &$item) {
             $item['time'] = $time;
-            $item['percent'] = round($item['num'] * 100 / $total, 2);
+            if ($item['num'] == 0) {
+                $item['percent'] = 0;
+            } else {
+                $item['percent'] = round($item['num'] * 100 / $total, 2);
+            }
         }
         $percent = array_column($result, 'percent');
         array_multisort($percent, SORT_DESC, $result);
         //@50
         $data50 = Games::where('item_name', $item_name);
-        if (!is_null($land_nm)) {
+        if (! is_null($land_nm)) {
             $data50 = $data50->where('land_nm', $land_nm);
         }
-        $data50 = $data50->take(50)->get();
-        $total50 = $data50->count();
-        $data50 = $data50->toArray();
+        $data50   = $data50->take(50)
+            ->get();
+        $total50  = $data50->count();
+        $data50   = $data50->toArray();
         $result50 = [];
         for ($i = 0; $i < 24; $i++) {
-            $start = Carbon::today()->hours($i)->format('H:i');
-            $end = Carbon::today()->hours($i)->minutes(59)->format('H:i');
-            $result50[$start . '-' . $end]['num'] = 0;
+            $start                                    = Carbon::today()
+                ->hours($i)
+                ->format('H:i');
+            $end                                      = Carbon::today()
+                ->hours($i)
+                ->minutes(59)
+                ->format('H:i');
+            $result50[$start . '-' . $end]['num']     = 0;
             $result50[$start . '-' . $end]['percent'] = 0;
         }
         foreach ($data50 as $item50) {
@@ -187,23 +248,33 @@ class PushHtmlCommand extends Command
         }
         foreach ($result50 as $time => &$item50) {
             $item50['time'] = $time;
-            $item50['percent'] = round($item50['num'] * 100 / $total50, 2);
+            if ($item50['num'] == 0) {
+                $item50['percent'] = 0;
+            } else {
+                $item50['percent'] = round($item50['num'] * 100 / $total50, 2);
+            }
         }
         $percent = array_column($result50, 'percent');
         array_multisort($percent, SORT_DESC, $result50);
         //@20
         $data20 = Games::where('item_name', $item_name);
-        if (!is_null($land_nm)) {
+        if (! is_null($land_nm)) {
             $data20 = $data20->where('land_nm', $land_nm);
         }
-        $data20 = $data20->take(20)->get();
-        $total20 = $data20->count();
-        $data20 = $data20->toArray();
+        $data20   = $data20->take(20)
+            ->get();
+        $total20  = $data20->count();
+        $data20   = $data20->toArray();
         $result20 = [];
         for ($i = 0; $i < 24; $i++) {
-            $start = Carbon::today()->hours($i)->format('H:i');
-            $end = Carbon::today()->hours($i)->minutes(59)->format('H:i');
-            $result20[$start . '-' . $end]['num'] = 0;
+            $start                                    = Carbon::today()
+                ->hours($i)
+                ->format('H:i');
+            $end                                      = Carbon::today()
+                ->hours($i)
+                ->minutes(59)
+                ->format('H:i');
+            $result20[$start . '-' . $end]['num']     = 0;
             $result20[$start . '-' . $end]['percent'] = 0;
         }
         foreach ($data20 as $item20) {
@@ -213,22 +284,27 @@ class PushHtmlCommand extends Command
         }
         foreach ($result20 as $time => &$item20) {
             $item20['time'] = $time;
-            $item20['percent'] = round($item20['num'] * 100 / $total20, 2);
+            if ($item20['num'] == 0) {
+                $item20['percent'] = 0;
+            } else {
+                $item20['percent'] = round($item20['num'] * 100 / $total20, 2);
+            }
         }
         $percent = array_column($result20, 'percent');
         array_multisort($percent, SORT_DESC, $result20);
-        $contents = view('item-time')->with([
-            'servers' => $servers,
-            'result' => array_slice(array_values($result), 0, 10),
-            'result50' => array_slice(array_values($result50), 0, 5),
-            'result20' => array_slice(array_values($result20), 0, 5),
-            'total' => $total,
-            'template_name' => $template_name,
-            'unit' => $unit,
-        ])->render();
+        $contents = view('theme.layout-item-time')
+            ->with($this->getLayoutConfig() + [
+                    'servers'       => $servers,
+                    'result'        => array_slice(array_values($result), 0, 10),
+                    'result50'      => array_slice(array_values($result50), 0, 5),
+                    'result20'      => array_slice(array_values($result20), 0, 5),
+                    'total'         => $total,
+                    'template_name' => $template_name,
+                    'unit'          => $unit,
+                ])
+            ->render();
 
-        file_put_contents(storage_path('games/' . $template_name . '.html'),
-            $contents);
+        file_put_contents(public_path($template_name . '.html'), $contents);
     }
 
     public function item()
@@ -252,174 +328,209 @@ class PushHtmlCommand extends Command
         set_time_limit(0);
         $servers = config('games');
         foreach ($servers as $serverId => $serverName) {
-            $end = Carbon::today()->subDays(1)->endOfDay();
-            $start = Carbon::today()->subDays(30)->startOfDay();
-            $data = Games::where('server_id', $serverId)->whereBetween('date',
-                array($start, $end))->get();
-            $grouped = $data->groupBy(function ($item, $key) {
+            $end        = Carbon::today()
+                ->subDays(1)
+                ->endOfDay();
+            $start      = Carbon::today()
+                ->subDays(30)
+                ->startOfDay();
+            $data       = Games::where('server_id', $serverId)
+                ->whereBetween('date', array($start, $end))
+                ->get();
+            $grouped    = $data->groupBy(function ($item, $key) {
                 return $item['role_name'];
             });
             $groupCount = $grouped->map(function ($item, $key) {
                 return collect($item)->count();
             });
-            $result = $groupCount->toArray();
+            $result     = $groupCount->toArray();
             arsort($result);
             $result = array_slice($result, 0, 30);
-            $data = [];
+            $data   = [];
             foreach ($result as $name => $num) {
                 $row['name'] = $name;
-                $row['num'] = $num;
-                $data[] = $row;
+                $row['num']  = $num;
+                $data[]      = $row;
             }
-            $contents = view('near-month-report')->with([
-                'servers' => $servers,
-                'serverName' => $serverName,
-                'result' => $data,
-            ])->render();
+            $contents = view('theme.layout-near-month-report')
+                ->with($this->getLayoutConfig() + [
+                        'servers'    => $servers,
+                        'serverName' => $serverName,
+                        'result'     => $data,
+                        'serverId'   => $serverId,
+                    ])
+                ->render();
 
-            file_put_contents(storage_path('games/near-month-report' . '-' . $serverId . '.html'),
-                $contents);
+            file_put_contents(public_path('near-month-report' . '-' . $serverId . '.html'), $contents);
         }
     }
 
     public function serverDayReport()
     {
         set_time_limit(0);
-//        $serverId = 25;
+        //        $serverId = 25;
         $servers = config('games');
         foreach ($servers as $serverId => $serverName) {
-//            $serverName = $servers[$serverId];
-//            for ($i = 2; $i <= 90; $i++) {
-//                $date = Carbon::today()->subDays($i);
-            $date = Carbon::today()->subDays(1);
-            dump($date);
-            $data = Games::where('server_id', $serverId)->where('date', $date)->orderBy('id')->get();
-            $filtered1 = $data->filter(function ($item, $key) {
-                return $item->type == 3 && $item->land_nm !== '[組隊副本][歐林]追隨者 一般' && (strpos($item->item_name,
-                            '刻印') === false);
-            })->all();
-            $filtered2 = $data->filter(function ($item, $key) {
-                return $item->type == 3 && (strpos($item->item_name, '刻印') !== false);
-            })->all();
-            $filtered3 = $data->filter(function ($item, $key) {
-                return $item->type == 1;
-            })->all();
-            $filtered4 = $data->filter(function ($item, $key) {
-                return $item->type == 3 && $item->land_nm === '[組隊副本][歐林]追隨者 一般';
-            })->all();
-            $filtered5 = [];
-            foreach ($data as $item) {
-                switch (true) {
-                    case ((strpos($item->land_nm,
-                            '烈焰地監') !== false)):
-                        $location = '烈焰地監';
-                        if (!isset($filtered5[$location])) {
-                            $filtered5[$location]['total'] = 1;
-                        } else {
-                            $filtered5[$location]['total']++;
-                        }
-                        if (!isset($filtered5[$location]['data'][$item->land_nm])) {
-                            $filtered5[$location]['data'][$item->land_nm] = 1;
-                        } else {
-                            $filtered5[$location]['data'][$item->land_nm]++;
-                        }
-                        break;
-                    case (is_null($item->land_nm) || $item->land_nm === ''):
-                        break;
-                    case ((strpos($item->land_nm,
-                            '組隊副本') !== false)):
-                        break;
-                    case ((strpos($item->land_nm,
-                            '世界首領') !== false)):
-                        break;
-                    case ((strpos($item->land_nm,
-                            '亞丁大陸') !== false)):
-                        $location = '亞丁大陸';
-                        if (!isset($filtered5[$location])) {
-                            $filtered5[$location]['total'] = 1;
-                        } else {
-                            $filtered5[$location]['total']++;
-                        }
-                        if (!isset($filtered5[$location]['data'][$item->land_nm])) {
-                            $filtered5[$location]['data'][$item->land_nm] = 1;
-                        } else {
-                            $filtered5[$location]['data'][$item->land_nm]++;
-                        }
-                        break;
-                    case ((strpos($item->land_nm,
-                            '伊娃王國') !== false)):
-                        $location = '伊娃王國';
-                        if (!isset($filtered5[$location])) {
-                            $filtered5[$location]['total'] = 1;
-                        } else {
-                            $filtered5[$location]['total']++;
-                        }
-                        if (!isset($filtered5[$location]['data'][$item->land_nm])) {
-                            $filtered5[$location]['data'][$item->land_nm] = 1;
-                        } else {
-                            $filtered5[$location]['data'][$item->land_nm]++;
-                        }
-                        break;
-                    case ((strpos($item->land_nm,
-                            '傲慢之塔') !== false)):
-                        $location = '傲慢之塔';
-                        if (!isset($filtered5[$location])) {
-                            $filtered5[$location]['total'] = 1;
-                        } else {
-                            $filtered5[$location]['total']++;
-                        }
-                        if (!isset($filtered5[$location]['data'][$item->land_nm])) {
-                            $filtered5[$location]['data'][$item->land_nm] = 1;
-                        } else {
-                            $filtered5[$location]['data'][$item->land_nm]++;
-                        }
-                        break;
-                    case ((strpos($item->land_nm,
-                            '奇岩地監') !== false)):
-                        $location = '奇岩地監';
-                        if (!isset($filtered5[$location])) {
-                            $filtered5[$location]['total'] = 1;
-                        } else {
-                            $filtered5[$location]['total']++;
-                        }
-                        if (!isset($filtered5[$location]['data'][$item->land_nm])) {
-                            $filtered5[$location]['data'][$item->land_nm] = 1;
-                        } else {
-                            $filtered5[$location]['data'][$item->land_nm]++;
-                        }
-                        break;
-                    case ((strpos($item->land_nm,
-                            '龍之谷地監') !== false)):
-                        $location = '龍之谷地監';
-                        if (!isset($filtered5[$location])) {
-                            $filtered5[$location]['total'] = 1;
-                        } else {
-                            $filtered5[$location]['total']++;
-                        }
-                        if (!isset($filtered5[$location]['data'][$item->land_nm])) {
-                            $filtered5[$location]['data'][$item->land_nm] = 1;
-                        } else {
-                            $filtered5[$location]['data'][$item->land_nm]++;
-                        }
-                        break;
+            $serverName = $servers[$serverId];
+            for ($i = 0; $i <= 10; $i++) {
+                $date = Carbon::today()
+                    ->subDays($i);
+//                            $date = Carbon::today()
+//                                ->subDays(1);
+                dump($date);
+                $data      = Games::where('server_id', $serverId)
+                    ->where('date', $date)
+                    ->orderBy('id')
+                    ->get();
+                $filtered1 = $data->filter(function ($item, $key) {
+                    return $item->type == 3 && $item->land_nm !== '[組隊副本][歐林]追隨者 一般' && (strpos($item->item_name, '刻印') === false);
+                })
+                    ->all();
+                $filtered2 = $data->filter(function ($item, $key) {
+                    return $item->type == 3 && (strpos($item->item_name, '刻印') !== false);
+                })
+                    ->all();
+                $filtered3 = $data->filter(function ($item, $key) {
+                    return $item->type == 1;
+                })
+                    ->all();
+                $filtered4 = $data->filter(function ($item, $key) {
+                    return $item->type == 3 && $item->land_nm === '[組隊副本][歐林]追隨者 一般';
+                })
+                    ->all();
+                $filtered5 = [];
+                foreach ($data as $item) {
+                    switch (true) {
+                        case ((strpos($item->land_nm, '遺忘之島') !== false)):
+                            $location = '遺忘之島';
+                            if (! isset($filtered5[$location])) {
+                                $filtered5[$location]['total'] = 1;
+                            } else {
+                                $filtered5[$location]['total']++;
+                            }
+                            if (! isset($filtered5[$location]['data'][$item->land_nm])) {
+                                $filtered5[$location]['data'][$item->land_nm] = 1;
+                            } else {
+                                $filtered5[$location]['data'][$item->land_nm]++;
+                            }
+                            break;
+                        case ((strpos($item->land_nm, '烈焰地監') !== false)):
+                            $location = '烈焰地監';
+                            if (! isset($filtered5[$location])) {
+                                $filtered5[$location]['total'] = 1;
+                            } else {
+                                $filtered5[$location]['total']++;
+                            }
+                            if (! isset($filtered5[$location]['data'][$item->land_nm])) {
+                                $filtered5[$location]['data'][$item->land_nm] = 1;
+                            } else {
+                                $filtered5[$location]['data'][$item->land_nm]++;
+                            }
+                            break;
+                        case ((strpos($item->land_nm, '暗影神殿') !== false)):
+                            $location = '暗影神殿';
+                            if (! isset($filtered5[$location])) {
+                                $filtered5[$location]['total'] = 1;
+                            } else {
+                                $filtered5[$location]['total']++;
+                            }
+                            if (! isset($filtered5[$location]['data'][$item->land_nm])) {
+                                $filtered5[$location]['data'][$item->land_nm] = 1;
+                            } else {
+                                $filtered5[$location]['data'][$item->land_nm]++;
+                            }
+                            break;
+                        case (is_null($item->land_nm) || $item->land_nm === ''):
+                            break;
+                        case ((strpos($item->land_nm, '組隊副本') !== false)):
+                            break;
+                        case ((strpos($item->land_nm, '世界首領') !== false)):
+                            break;
+                        case ((strpos($item->land_nm, '亞丁大陸') !== false)):
+                            $location = '亞丁大陸';
+                            if (! isset($filtered5[$location])) {
+                                $filtered5[$location]['total'] = 1;
+                            } else {
+                                $filtered5[$location]['total']++;
+                            }
+                            if (! isset($filtered5[$location]['data'][$item->land_nm])) {
+                                $filtered5[$location]['data'][$item->land_nm] = 1;
+                            } else {
+                                $filtered5[$location]['data'][$item->land_nm]++;
+                            }
+                            break;
+                        case ((strpos($item->land_nm, '伊娃王國') !== false)):
+                            $location = '伊娃王國';
+                            if (! isset($filtered5[$location])) {
+                                $filtered5[$location]['total'] = 1;
+                            } else {
+                                $filtered5[$location]['total']++;
+                            }
+                            if (! isset($filtered5[$location]['data'][$item->land_nm])) {
+                                $filtered5[$location]['data'][$item->land_nm] = 1;
+                            } else {
+                                $filtered5[$location]['data'][$item->land_nm]++;
+                            }
+                            break;
+                        case ((strpos($item->land_nm, '傲慢之塔') !== false)):
+                            $location = '傲慢之塔';
+                            if (! isset($filtered5[$location])) {
+                                $filtered5[$location]['total'] = 1;
+                            } else {
+                                $filtered5[$location]['total']++;
+                            }
+                            if (! isset($filtered5[$location]['data'][$item->land_nm])) {
+                                $filtered5[$location]['data'][$item->land_nm] = 1;
+                            } else {
+                                $filtered5[$location]['data'][$item->land_nm]++;
+                            }
+                            break;
+                        case ((strpos($item->land_nm, '奇岩地監') !== false)):
+                            $location = '奇岩地監';
+                            if (! isset($filtered5[$location])) {
+                                $filtered5[$location]['total'] = 1;
+                            } else {
+                                $filtered5[$location]['total']++;
+                            }
+                            if (! isset($filtered5[$location]['data'][$item->land_nm])) {
+                                $filtered5[$location]['data'][$item->land_nm] = 1;
+                            } else {
+                                $filtered5[$location]['data'][$item->land_nm]++;
+                            }
+                            break;
+                        case ((strpos($item->land_nm, '龍之谷地監') !== false)):
+                            $location = '龍之谷地監';
+                            if (! isset($filtered5[$location])) {
+                                $filtered5[$location]['total'] = 1;
+                            } else {
+                                $filtered5[$location]['total']++;
+                            }
+                            if (! isset($filtered5[$location]['data'][$item->land_nm])) {
+                                $filtered5[$location]['data'][$item->land_nm] = 1;
+                            } else {
+                                $filtered5[$location]['data'][$item->land_nm]++;
+                            }
+                            break;
 
+                    }
                 }
-            }
-            ksort($filtered5);
-            $contents = view('server-day-report')->with([
-                'servers' => $servers,
-                'date' => $date->format('Y-m-d'),
-                'serverName' => $serverName,
-                'data1' => $filtered1,
-                'data2' => $filtered2,
-                'data3' => $filtered3,
-                'data4' => $filtered4,
-                'data5' => $filtered5,
-            ])->render();
+                ksort($filtered5);
+                $contents = view('theme.layout-server-day-report')
+                    ->with($this->getLayoutConfig() + [
+                            'servers'    => $servers,
+                            'serverId'   => $serverId,
+                            'date'       => $date->format('Y-m-d'),
+                            'serverName' => $serverName,
+                            'data1'      => $filtered1,
+                            'data2'      => $filtered2,
+                            'data3'      => $filtered3,
+                            'data4'      => $filtered4,
+                            'data5'      => $filtered5,
+                        ])
+                    ->render();
 
-            file_put_contents(storage_path('games/' . $date->format('Y-m-d') . '-' . $serverId . '.html'),
-                $contents);
-//            }
+                file_put_contents(public_path($date->format('Y-m-d') . '-' . $serverId . '.html'), $contents);
+            }
         }
     }
 
@@ -427,36 +538,52 @@ class PushHtmlCommand extends Command
     {
         set_time_limit(0);
         ini_set('memory_limit', '4096M');
-        $servers = config('games');
-        $end = Carbon::today()->subDays(1)->endOfDay();
-        $start = Carbon::today()->subDays(7)->startOfDay();
-        $result = Games::where('type', 3)->where('grade_cd', 5)->whereBetween('date',
-            array($start, $end))->orderBy('id', 'desc')->get();
-        $contents = view('purple-item-time')->with([
-            'servers' => $servers,
-            'result' => $result,
-        ])->render();
+        $servers  = config('games');
+        $end      = Carbon::today()
+            ->subDays(1)
+            ->endOfDay();
+        $start    = Carbon::today()
+            ->subDays(7)
+            ->startOfDay();
+        $result   = Games::where('type', 3)
+            ->where('grade_cd', 5)
+            ->whereBetween('date', array($start, $end))
+            ->orderBy('id', 'desc')
+            ->get();
+        $contents = view('theme.layout-purple-item-time')
+            ->with($this->getLayoutConfig() + [
+                    'servers' => $servers,
+                    'result'  => $result,
+                ])
+            ->render();
 
-        file_put_contents(storage_path('games/purple-item-time' . '.html'),
-            $contents);
+        file_put_contents(public_path('purple-item-time' . '.html'), $contents);
     }
 
     public function redItemTime()
     {
         set_time_limit(0);
         ini_set('memory_limit', '4096M');
-        $servers = config('games');
-        $end = Carbon::today()->subDays(1)->endOfDay();
-        $start = Carbon::today()->subDays(7)->startOfDay();
-        $result = Games::where('type', 3)->where('grade_cd', 4)->whereBetween('date',
-            array($start, $end))->orderBy('id', 'desc')->get();
-        $contents = view('red-item-time')->with([
-            'servers' => $servers,
-            'result' => $result,
-        ])->render();
+        $servers  = config('games');
+        $end      = Carbon::today()
+            ->subDays(1)
+            ->endOfDay();
+        $start    = Carbon::today()
+            ->subDays(7)
+            ->startOfDay();
+        $result   = Games::where('type', 3)
+            ->where('grade_cd', 4)
+            ->whereBetween('date', array($start, $end))
+            ->orderBy('id', 'desc')
+            ->get();
+        $contents = view('theme.layout-red-item-time')
+            ->with($this->getLayoutConfig() + [
+                    'servers' => $servers,
+                    'result'  => $result,
+                ])
+            ->render();
 
-        file_put_contents(storage_path('games/red-item-time' . '.html'),
-            $contents);
+        file_put_contents(public_path('red-item-time' . '.html'), $contents);
     }
 
     public function cardTime()
@@ -466,20 +593,31 @@ class PushHtmlCommand extends Command
         $servers = config('games');
 
         $yellow_result = [];
-        $yellow_result = Games::where('type', 1)->where('grade_cd', 32)->orderBy('id')->get();
+        $yellow_result = Games::where('type', 1)
+            ->where('grade_cd', 32)
+            ->orderBy('id')
+            ->get();
 
         $purple_result = [];
-        $purple_total = 0;
+        $purple_total  = 0;
         for ($i = 0; $i < 24; $i++) {
-            $start = Carbon::today()->hours($i)->format('H:i:s');
-            $end = Carbon::today()->hours($i)->minutes(59)->format('H:i:s');
-            $purple = [];
-            $purple = Games::where('type', 1)->whereBetween('get_time',
-                array($start, $end))->where('grade_cd', 5)->orderBy('id')->get();
-            $sum = $purple->count();
-            $purple_result[$start . '-' . $end]['total'] = $sum;
+            $start                                         = Carbon::today()
+                ->hours($i)
+                ->format('H:i:s');
+            $end                                           = Carbon::today()
+                ->hours($i)
+                ->minutes(59)
+                ->format('H:i:s');
+            $purple                                        = [];
+            $purple                                        = Games::where('type', 1)
+                ->whereBetween('get_time', array($start, $end))
+                ->where('grade_cd', 5)
+                ->orderBy('id')
+                ->get();
+            $sum                                           = $purple->count();
+            $purple_result[$start . '-' . $end]['total']   = $sum;
             $purple_result[$start . '-' . $end]['percent'] = 0;
-            $purple_total += $sum;
+            $purple_total                                  += $sum;
         }
         foreach ($purple_result as $time => &$data) {
             $data['percent'] = round($data['total'] * 100 / $purple_total, 2);
@@ -488,32 +626,40 @@ class PushHtmlCommand extends Command
         array_multisort($percent, SORT_DESC, $purple_result);
 
         $all_result = [];
-        $all_total = 0;
+        $all_total  = 0;
         for ($i = 0; $i < 24; $i++) {
-            $start = Carbon::today()->hours($i)->format('H:i:s');
-            $end = Carbon::today()->hours($i)->minutes(59)->format('H:i:s');
-            $red = [];
-            $red = Games::where('type', 1)->whereBetween('get_time',
-                array($start, $end))->orderBy('id')->get();
-            $sum = $red->count();
-            $all_result[$start . '-' . $end]['total'] = $sum;
+            $start                                      = Carbon::today()
+                ->hours($i)
+                ->format('H:i:s');
+            $end                                        = Carbon::today()
+                ->hours($i)
+                ->minutes(59)
+                ->format('H:i:s');
+            $red                                        = [];
+            $red                                        = Games::where('type', 1)
+                ->whereBetween('get_time', array($start, $end))
+                ->orderBy('id')
+                ->get();
+            $sum                                        = $red->count();
+            $all_result[$start . '-' . $end]['total']   = $sum;
             $all_result[$start . '-' . $end]['percent'] = 0;
-            $all_total += $sum;
+            $all_total                                  += $sum;
         }
         foreach ($all_result as $time => &$data) {
             $data['percent'] = round($data['total'] * 100 / $all_total, 2);
         }
         $percent = array_column($all_result, 'percent');
         array_multisort($percent, SORT_DESC, $all_result);
-        $contents = view('card-time')->with([
-            'servers' => $servers,
-            'all_result' => array_slice($all_result, 0, 5),
-            'purple_result' => array_slice($purple_result, 0, 5),
-            'yellow_result' => $yellow_result->toArray(),
-        ])->render();
+        $contents = view('theme.layout-card-time')
+            ->with($this->getLayoutConfig() + [
+                    'servers'       => $servers,
+                    'all_result'    => array_slice($all_result, 0, 5),
+                    'purple_result' => array_slice($purple_result, 0, 5),
+                    'yellow_result' => $yellow_result->toArray(),
+                ])
+            ->render();
 
-        file_put_contents(storage_path('games/card-time' . '.html'),
-            $contents);
+        file_put_contents(public_path('card-time' . '.html'), $contents);
     }
 }
 

@@ -14,3 +14,12 @@
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/search', 'SearchController@index');
+//Route::get('/import', 'SearchController@import');
+//Route::get('/boss', 'BossController@index');
+Route::post('/callback', 'LineController@webhook');
+Route::post('/callback2', 'LineController@webhook2');
+//Route::get('/boss/clear', 'BossController@clear');
+//Route::get('/boss/reload', 'BossController@reload');
+//Route::get('/boss/kill', 'BossController@kill');

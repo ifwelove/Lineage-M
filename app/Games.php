@@ -10,7 +10,7 @@ class Games extends Model
 
     protected $table = 'games';
     public $timestamps = true;
-    use SoftDeletes;
+//    use SoftDeletes;
 
     protected $fillable = [
         'server_id',

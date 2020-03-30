@@ -19,10 +19,32 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
           integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-    <title>打寶查詢器</title>
+    <title>天堂M 掉寶查詢 打寶查詢</title>
 </head>
 <body>
 <div class="container">
+    <h1>角色近半年資料查詢</h1>
+    <div class="row">
+        <form action="/search">
+            <div class="form-group">
+                <label for="exampleFormControlSelect1">伺服器</label>
+                <select name="serverId" class="form-control" id="exampleFormControlSelect1">
+                    <option value="0">請選擇伺服器</option>
+                    @foreach ($servers as $serverId => $name)
+                        <option value="{{ $serverId }}">{{ $name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="exampleFormControlInput1">名稱</label>
+                <input type="text" name="name" class="form-control" id="exampleFormControlInput1" placeholder="名稱">
+            </div>
+            <div class="form-group">
+                <label for="exampleFormControlInput2">Submit</label>
+                <input type="submit" value="Submit" class="form-control" id="exampleFormControlInput2" placeholder="Submit">
+            </div>
+        </form>
+    </div>
     <h1>歐洲統計</h1>
     <div class="row">
         <div class="col-4">
@@ -46,22 +68,22 @@
             </a>
         </div>
         @foreach ($items as $item)
-        <div class="col-4">
-            <a href="/{{ $item['item'] }}.html">
-                {{ $item['slogan'] }}
-            </a>
-        </div>
+            <div class="col-4">
+                <a href="/{{ $item['item'] }}.html">
+                    {{ $item['slogan'] }}
+                </a>
+            </div>
         @endforeach
     </div>
     <h1>魔法娃娃時刻分佈</h1>
     <div class="row">
-{{--        @foreach ($wawas as $wawa)--}}
-{{--            <div class="col-4">--}}
-{{--                <a href="/{{ $wawa['item'] }}.html">--}}
-{{--                    {{ $wawa['slogan'] }}--}}
-{{--                </a>--}}
-{{--            </div>--}}
-{{--        @endforeach--}}
+        {{--        @foreach ($wawas as $wawa)--}}
+        {{--            <div class="col-4">--}}
+        {{--                <a href="/{{ $wawa['item'] }}.html">--}}
+        {{--                    {{ $wawa['slogan'] }}--}}
+        {{--                </a>--}}
+        {{--            </div>--}}
+        {{--        @endforeach--}}
         <div class="col-4">
             <a href="/wawa.html">
                 魔法娃娃時刻分佈

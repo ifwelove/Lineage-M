@@ -1,28 +1,18 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-155746198-1"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
+@extends('theme.layout')
 
-        function gtag() {
-            dataLayer.push(arguments);
-        }
-
-        gtag('js', new Date());
-        gtag('config', 'UA-155746198-1');
-    </script>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
-          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-    <title>天堂M | {{ $template_name }}, 出寶時間點</title>
-</head>
-<body>
-<div class="container">
+@section('css')
+@endsection
+@section('seo')
+    <title>{{ $template_name }} - 出寶時間點 - {{ config('app.name') }}</title>
+    <meta content="🔥{{ $template_name }} - 出寶時間點 - {{ config('app.name') }}🔥" name="description" />
+    <meta property="og:site_name" content="{{ config('app.name') }}">
+    <meta property="og:title" content="{{ $template_name }} - 出寶時間點 - {{ config('app.name') }}">
+    <meta property="og:description" content="🔥{{ $template_name }} - 出寶時間點 - {{ config('app.name') }}🔥">
+    <meta property="og:type" content="website">
+    {{--    <meta property="og:url" content="{{ $pageUrl }}">--}}
+    <meta property="og:locale" content="zh_TW">
+@endsection
+@section('content')
     <div class="row">
         <h1>{{ $template_name }}, 出寶時間點</h1>
     </div>
@@ -105,6 +95,11 @@
             </div>
         @endforeach
     </div>
-</div>
-</body>
-</html>
+@endsection
+
+@section('script')
+@endsection
+
+@section('script-bottom')
+@endsection
+
